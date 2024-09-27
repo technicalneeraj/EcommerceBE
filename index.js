@@ -12,10 +12,19 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5174',
+    credentials: true
+}));
+
 app.use(cookieParser());
 
-app.use("/",otpRoutes);
+
+app.use("/", otpRoutes);
+
+app.use((err, req, res, next) => {
+    res.status(err.status || 500).json({ message: err.message || "Internal Server Error" });
+});
 
 
 

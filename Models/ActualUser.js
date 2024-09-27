@@ -35,8 +35,6 @@ const userSchema = new mongoose.Schema({
             ref: "addresses"
         }
     ],
-    resetPasswordToken: String,
-    resetPasswordExpires: Date,
     isEmailVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     cart: [
@@ -65,7 +63,10 @@ const userSchema = new mongoose.Schema({
     ],
     otpAttempts: { type: Number, default: 0 },
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'products' }],
-    otp:{type:String}
+    otp:{type:String},
+    otpExpirationTime:{
+        type:Date
+    }
 }, { timestamps: true }); 
 
 const ActualUser = mongoose.model("ActualUser", userSchema); 
