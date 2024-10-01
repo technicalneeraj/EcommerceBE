@@ -1,21 +1,21 @@
-const mongoose=require("mongoose");
+const mongoose = require("mongoose");
 
-const categorySchema=new mongoose.Schema({
-    name:{
-        type:String,
-        required:true,
-        maxLength:50
+const categorySchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        maxLength: 50
     },
-    parentCategory:{
-        type:mongoose.type.Schema.Types.ObjectId,
-        ref:"categories"
+    parentCategory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "categories"
     },
-    level:{
-        type:Number,
-        required:true
+    level: {
+        type: Number,
+        required: true
     }
 });
 
-const Category=mongoose.model("categories",categorySchema);
+const Category = mongoose.model("categories", categorySchema);
 
-module.exports=Category;
+module.exports = Category;

@@ -1,5 +1,5 @@
 const express = require('express');
-const { forgototpVerify ,signuphandler,loginhandler,forgotOtpSenderHandler,registerOtpValidateHandler,changePasswordHandler,gettinguserdata,logouthandler} = require('../Controllers/Authentication.controller');
+const { forgototpVerify ,signuphandler,loginhandler,deleteforedithandler,forgotOtpSenderHandler,registerOtpValidateHandler,changePasswordHandler,gettinguserdata,logouthandler} = require('../Controllers/Authentication.controller');
 const {CatchAsync}=require("../Utils/CatchAsync");
 const router = express.Router()
 const authMiddleware = require('../Middlewares/authMiddleware');;
@@ -11,7 +11,8 @@ router
 .post("/forgototpsender",CatchAsync(forgotOtpSenderHandler))
 .post("/um/user-request/verifyOTP",CatchAsync(registerOtpValidateHandler))
 .patch("/changepassword",CatchAsync(changePasswordHandler))
+.delete("/deletedataforedit",CatchAsync(deleteforedithandler))
 .get("/userdata",authMiddleware,CatchAsync(gettinguserdata))
-.post('/logout',authMiddleware,CatchAsync(logouthandler));
+.post('/um/logout',authMiddleware,CatchAsync(logouthandler));
 
 module.exports = router;

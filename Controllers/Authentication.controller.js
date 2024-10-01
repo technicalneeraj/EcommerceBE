@@ -1,5 +1,5 @@
 const ActualUser = require('../Models/ActualUser');
-const UserRequest=require("../Models/UserRequest");
+const UserRequest = require("../Models/UserRequest");
 const OTP = require("otp");
 const jwt = require('jsonwebtoken');
 const { hashPassword, comparePassword } = require("../Services/HashingPassword");
@@ -20,7 +20,7 @@ const signuphandler = async (req, res) => {
             await transporter.sendMail(mailOptions);
             const hashedpassword = await hashPassword(password);
             const user = await UserRequest.create({
-                firstname, lastname, email, password: hashedpassword, phone, otp,otpExpirationTime:Date.now()+(10*60*1000)
+                firstname, lastname, email, password: hashedpassword, phone, otp, otpExpirationTime: Date.now() + (10 * 60 * 1000)
             });
             res.status(200).json({ message: 'OTP sent successfully!' });
         } catch (error) {
@@ -51,7 +51,7 @@ const registerOtpValidateHandler = async (req, res) => {
             email,
             password,
             phone,
-            isEmailVerified: true, 
+            isEmailVerified: true,
         });
         await UserRequest.deleteOne({ email });
         return res.status(200).json({ message: "Successfully verified" });
@@ -78,12 +78,19 @@ const loginhandler = async (req, res) => {
     if (!passed) {
         return res.status(201).json({ message: "You entered wrong username or password" });
     }
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION });
-    res.cookie('token', token, {
-        httpOnly: true,
-        maxAge: 60 * 60 * 1000,
-        secure: false,
-        sameSite: 'Lax'
+    const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION });
+    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN });
+    res.cookie('accessToken', accessToken, {
+        httpOnly: false,
+        secure: true,
+        maxAge: 960000,
+        // sameSite: 'Lax' 
+    });
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: false,
+        secure: true,
+        maxAge: 960000000,
+        // sameSite: 'Lax' 
     });
     res.status(200).json({ message: 'Login successful' });
 }
@@ -104,7 +111,7 @@ const forgotOtpSenderHandler = async (req, res) => {
     try {
         await transporter.sendMail(mailOptions);
         user.otp = otp;
-        user.otpExpirationTime=Date.now()*(10*60*1000) //10min
+        user.otpExpirationTime = new Date(Date.now() + 10 * 60 * 1000); //10min
         await user.save();
         res.status(200).json({ message: 'OTP sent successfully!' });
     } catch (error) {
@@ -129,7 +136,7 @@ const forgototpVerify = async (req, res) => {
     if (user.otp === otp) {
         user.otp = "";
         user.otpAttempts = 0;
-        user.otpExpirationTime=Date.now();
+        user.otpExpirationTime = Date.now();
         await user.save();
         return res.status(200).json({ message: "Successfully verified" });
     }
@@ -139,7 +146,7 @@ const forgototpVerify = async (req, res) => {
     if (user.otpAttempts >= 3) {
         user.otpAttempts = 0;
         user.otp = "";
-        user.otpExpirationTime=Date.now();
+        user.otpExpirationTime = Date.now();
         await user.save();
         return res.status(403).json({ message: "Too many failed attempts. Please try again later" });
     } else {
@@ -160,13 +167,30 @@ const changePasswordHandler = async (req, res) => {
     res.status(200).json({ message: "Your Password successfully changed" });
 }
 
-const logouthandler=async(req, res) => {
-        res.clearCookie('token');
-        res.json({ message: 'Successfully logged out.' });
+const logouthandler = async (req, res) => {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    res.status(200).json({ message: 'Successfully logged out.' });
 }
 
-const gettinguserdata=async(req,res)=>{
-    res.json("hi");
+const gettinguserdata = async (req, res) => {
+    res.status(200).json("hi");
 }
 
-module.exports = { forgototpVerify, signuphandler, loginhandler, forgotOtpSenderHandler, registerOtpValidateHandler, changePasswordHandler ,gettinguserdata,logouthandler};
+const deleteforedithandler = async (req, res) => {
+    const { email } = req.body;
+    try {
+        const data=await UserRequest.find({email});
+        const result = await UserRequest.deleteOne({ email });
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: "No user found with that email" });
+        }
+        res.status(200).json({ message: "Successfully deleted" });
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+module.exports = { deleteforedithandler,forgototpVerify, signuphandler, loginhandler, forgotOtpSenderHandler, registerOtpValidateHandler, changePasswordHandler, gettinguserdata, logouthandler };

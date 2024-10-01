@@ -66,7 +66,8 @@ const userSchema = new mongoose.Schema({
     otp:{type:String},
     otpExpirationTime:{
         type:Date
-    }
+    },
+    refresh_token:String
 }, { timestamps: true }); 
 
 const ActualUser = mongoose.model("ActualUser", userSchema); 
