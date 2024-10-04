@@ -1,19 +1,18 @@
 require('dotenv').config();
 const express = require("express");
 const cors = require('cors');
-const connectDB = require('./dbconn');
-const Banner = require("./Models/Banner");
+const connectDB = require('./dbConn');
+const Banner = require("./models/banner"); 
 const cookieParser = require('cookie-parser');
-const otpRoutes = require('./Routes/Authentication');
-const {addCategories}=require("./Utils/AddingCategory");
-const productRoute =require("./Routes/ProductRoutes");
+const authRoutes = require('./routes/authentication.routes');
+const productRoutes =require("./routes/product.routes");
 
-const categoryRoutes=require("./Routes/categoryRoutes");
+const categoryRoutes=require("./routes/category.routes"); 
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 8080; 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: 'http://localhost:5173', // url whitelist
     credentials: true
 }));
 
@@ -23,11 +22,12 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
-
-app.use("/", otpRoutes);
-app.use("/product",productRoute);
+ // index route 
+app.use("/", authRoutes);
+app.use("/product",productRoutes);
 app.use('/api/categories', categoryRoutes);
 
+// custom error handling
 app.use((err, req, res, next) => {
     res.status(err.status || 500).json({ message: err.message || "Internal Server Error" });
 });
@@ -38,6 +38,8 @@ app.get("/Bannerdata", async (req, res) => {
     const data = await Banner.find({});
     res.status(200).json(data);
 })
+
+// default route 
 
 app.listen(port, () => {
     console.log(`Listening on the port ${port}`);

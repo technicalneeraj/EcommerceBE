@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['customer', 'admin', 'vendor'],
+        enum: ['customer', 'admin', 'vendor'], // constants roles role ={CUSTOMER: }
         default: "customer"
     },
     phone: {
@@ -70,6 +70,6 @@ const userSchema = new mongoose.Schema({
     refresh_token:String
 }, { timestamps: true }); 
 
-const ActualUser = mongoose.model("ActualUser", userSchema); 
+const User = mongoose.model("User", userSchema); 
 
-module.exports = ActualUser;
+module.exports = User;

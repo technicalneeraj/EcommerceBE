@@ -8,14 +8,10 @@ const categorySchema = new mongoose.Schema({
     },
     parentCategory: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "categories"
-    },
-    level: {
-        type: Number,
-        required: true
+        ref: "Category"
     }
 });
 
-const Category = mongoose.model("categories", categorySchema);
+const Category = mongoose.model("Category", categorySchema);
 
 module.exports = Category;

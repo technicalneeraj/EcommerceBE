@@ -3,7 +3,7 @@ const mongoose=require("mongoose");
 const cartSchema=new mongoose.Schema({
     user:{
         type:mongoose.type.Schema.Types.ObjectId,
-        ref:"actualuser",
+        ref:"User",
         required:true
     },
     cartItems:[
