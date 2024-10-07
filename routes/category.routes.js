@@ -1,13 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/category.controller');
+const {upload}=require("../services/cloudinary");
 
-// change
-router.get('/level1', categoryController.getLevel1Categories);
-router.get('/level2/:parentId', categoryController.getLevel2Categories);
-router.get('/level3/:parentId', categoryController.getLevel3Categories);
-// router.get('/categories', categoryController.getAllCategories); 
-// router.get('/categories/:parentId', categoryController.getSubCategories); 
+router
+.get('/', categoryController.getCategories)
+.post('/add', upload.single('image'), categoryController.addCategory)
 
-// man, shoe ,company , size 
 module.exports = router;

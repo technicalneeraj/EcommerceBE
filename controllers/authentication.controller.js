@@ -4,26 +4,26 @@ const OTP = require("otp");
 const jwt = require('jsonwebtoken');
 const { hashPassword, comparePassword } = require("../services/hashingPassword");
 const { transporter } = require("../services/mail");
-const {EMAIL_SUBJECTS,OTP_EXPIRATION_TIME,HTTP_STATUS}=require("../config/constants");
+const { EMAIL_SUBJECTS, OTP_EXPIRATION_TIME, HTTP_STATUS } = require("../config/constants");
 
 
 const signupHandler = async (req, res) => {
     const { firstname, lastname, email, password, phone } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-        let otp = new OTP().totp(); 
+        let otp = new OTP().totp();
         const mailOptions = {
             from: process.env.FROM_EMAIL,
             to: email,
-            subject: EMAIL_SUBJECTS.SIGNUP, 
+            subject: EMAIL_SUBJECTS.SIGNUP,
             text: `One Time PassWord is: ${otp} . Dont share to anyone !!  Valid for 10 mins`
         }
         try {
             await transporter.sendMail(mailOptions);
             const hashedpassword = await hashPassword(password);
-            await UserRequest.create({ 
+            await UserRequest.create({
                 firstname, lastname, email, password: hashedpassword, phone, otp, otpExpirationTime: Date.now() + (10 * 60 * 1000)
-            }); 
+            });
             res.status(HTTP_STATUS.OK).json({ message: 'OTP sent successfully!' });
         } catch (error) {
             console.error('Error sending email:', error);
@@ -195,4 +195,61 @@ const deleteForEditHandler = async (req, res) => {
     }
 };
 
-module.exports= { forgotOtpVerifier ,signupHandler,loginHandler,forgotOtpSenderHandler,registerOtpValidateHandler,changePasswordHandler,deleteForEditHandler,getUserData,logoutHandler};
+
+const verifyToken = async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+
+        try {
+
+            const user = await User.findById(decoded.userId);
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+
+            const userData = {
+                id: user._id,
+                firstname: user.firstname,
+                lastname: user.lastname,
+                email: user.email,
+                phone: user.phone,
+                address: user.address
+            };
+            res.status(200).json({ message: 'Token is valid', user: userData });
+        } catch (fetchError) {
+            console.error("Error fetching user:", fetchError);
+            res.status(500).json({ message: 'Error fetching user data' });
+        }
+    });
+};
+
+const updateProfile = async (req, res) => {
+    const { firstname, lastname, email, phone } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    user.firstname = firstname ?? user.firstname;
+    user.lastname = lastname ?? user.lastname;
+    user.phone = phone ?? user.phone;
+    // user.address.push(address);
+
+    await user.save();
+
+    return res.status(200).json({ message: "Profile updated successfully", user });
+}
+
+
+module.exports = { updateProfile, verifyToken, forgotOtpVerifier, signupHandler, loginHandler, forgotOtpSenderHandler, registerOtpValidateHandler, changePasswordHandler, deleteForEditHandler, getUserData, logoutHandler };

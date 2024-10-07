@@ -6,8 +6,8 @@ const Banner = require("./models/banner");
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/authentication.routes');
 const productRoutes =require("./routes/product.routes");
-
 const categoryRoutes=require("./routes/category.routes"); 
+const {addingCategories}=require("./utils/addingCategory")
 
 const app = express();
 const port = process.env.PORT || 8080; 
@@ -38,8 +38,6 @@ app.get("/Bannerdata", async (req, res) => {
     const data = await Banner.find({});
     res.status(200).json(data);
 })
-
-// default route 
 
 app.listen(port, () => {
     console.log(`Listening on the port ${port}`);
