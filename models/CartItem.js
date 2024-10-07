@@ -32,7 +32,7 @@ const cartItemSchema=new mongoose.Schema({
     },
     userId:{
         type:mongoose.type.Schema.Types.ObjectId,
-        ref:"actualuser",
+        ref:"User",
         required:true
     }
 
