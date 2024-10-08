@@ -9,29 +9,40 @@ const { EMAIL_SUBJECTS, OTP_EXPIRATION_TIME, HTTP_STATUS } = require("../config/
 
 const signupHandler = async (req, res) => {
     const { firstname, lastname, email, password, phone } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
-        let otp = new OTP().totp();
-        const mailOptions = {
-            from: process.env.FROM_EMAIL,
-            to: email,
-            subject: EMAIL_SUBJECTS.SIGNUP,
-            text: `One Time PassWord is: ${otp} . Dont share to anyone !!  Valid for 10 mins`
-        }
-        try {
-            await transporter.sendMail(mailOptions);
-            const hashedpassword = await hashPassword(password);
-            await UserRequest.create({
-                firstname, lastname, email, password: hashedpassword, phone, otp, otpExpirationTime: Date.now() + (10 * 60 * 1000)
-            });
-            res.status(HTTP_STATUS.OK).json({ message: 'OTP sent successfully!' });
-        } catch (error) {
-            console.error('Error sending email:', error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Error sending OTP' });
-        }
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        return res.status(HTTP_STATUS.CONFLICT).json({ message: "User already exists" });
     }
-    else {
-        res.status(HTTP_STATUS.CONFLICT).json({ message: "user already exist" });
+
+    let otp = new OTP().totp();
+    const mailOptions = {
+        from: process.env.FROM_EMAIL,
+        to: email,
+        subject: EMAIL_SUBJECTS.SIGNUP,
+        text: `One Time Password is: ${otp}. Don't share it with anyone! Valid for 10 mins`
+    };
+
+    try {
+        const userRequest = await UserRequest.findOne({ email });
+        if (userRequest) {
+            await UserRequest.deleteOne({ email });
+        }
+        await transporter.sendMail(mailOptions);
+        const hashedPassword = await hashPassword(password);
+        await UserRequest.create({
+            firstname,
+            lastname,
+            email,
+            password: hashedPassword,
+            phone,
+            otp,
+            otpExpirationTime: Date.now() + (10 * 60 * 1000) // 10 minutes
+        });
+
+        res.status(HTTP_STATUS.OK).json({ message: 'OTP sent successfully!' });
+    } catch (error) {
+        console.error('Error processing signup:', error);
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Error sending OTP' });
     }
 };
 
@@ -94,7 +105,17 @@ const loginHandler = async (req, res) => {
         maxAge: 960000000,
         // sameSite: 'Lax' 
     });
-    res.status(HTTP_STATUS.OK).json({ message: 'Login successfull' });
+
+    const userData = {
+        id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        role:user.role
+    };
+    res.status(HTTP_STATUS.OK).json({ message: 'Login successfull',user:userData });
 }
 
 const forgotOtpSenderHandler = async (req, res) => {
@@ -223,7 +244,8 @@ const verifyToken = async (req, res) => {
                 lastname: user.lastname,
                 email: user.email,
                 phone: user.phone,
-                address: user.address
+                address: user.address,
+                role:user.role
             };
             res.status(200).json({ message: 'Token is valid', user: userData });
         } catch (fetchError) {
@@ -251,5 +273,16 @@ const updateProfile = async (req, res) => {
     return res.status(200).json({ message: "Profile updated successfully", user });
 }
 
+const deleteAccountHandler=async(req,res)=>{
+    const userData = req.body;
+    const user = await User.findById(userData.id);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    await User.deleteOne({ _id: userData.id });
 
-module.exports = { updateProfile, verifyToken, forgotOtpVerifier, signupHandler, loginHandler, forgotOtpSenderHandler, registerOtpValidateHandler, changePasswordHandler, deleteForEditHandler, getUserData, logoutHandler };
+    res.status(200).json({ message: 'Account deleted successfully'});
+    
+}
+
+module.exports = { deleteAccountHandler,updateProfile, verifyToken, forgotOtpVerifier, signupHandler, loginHandler, forgotOtpSenderHandler, registerOtpValidateHandler, changePasswordHandler, deleteForEditHandler, getUserData, logoutHandler };
