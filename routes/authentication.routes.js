@@ -1,6 +1,6 @@
 const express = require('express');
 // same structure for controllersxx
-const { updateProfile,verifyToken,forgotOtpVerifier ,signupHandler,loginHandler,forgotOtpSenderHandler,registerOtpValidateHandler,changePasswordHandler,deleteForEditHandler,getUserData,logoutHandler} = require('../controllers/authentication.controller');
+const { deleteAccountHandler,updateProfile,verifyToken,forgotOtpVerifier ,signupHandler,loginHandler,forgotOtpSenderHandler,registerOtpValidateHandler,changePasswordHandler,deleteForEditHandler,getUserData,logoutHandler} = require('../controllers/authentication.controller');
 const {catchAsync}=require("../utils/catchAsync");
 const {authMiddleware} = require('../middlewares/authMiddleware');
 
@@ -21,4 +21,5 @@ router
 .post('/um/logout',authMiddleware,catchAsync(logoutHandler))
 .get("/api/auth/verify-token",authMiddleware,catchAsync(verifyToken))
 .post("/um/user/update-profile",authMiddleware,catchAsync(updateProfile))
+.delete("/um/deleteAccount",authMiddleware,catchAsync(deleteAccountHandler))
 module.exports = router;

@@ -15,7 +15,7 @@ const productSchema = new Schema(
     },
     category: {
       type: Schema.Types.ObjectId,
-      ref: 'categories',
+      ref: 'Category',
       required: true
     },
     brand: {

@@ -16,10 +16,10 @@ exports.addCategory = async (req, res) => {
     }
 
     const newCategory = new Category({
-      type: req.body.categoryName,
-      parent: JSON.parse(req.body.parentCategories),
+      type: req.body.categoryName.toLowerCase(), 
+      parent: JSON.parse(req.body.parentCategories).map(category => category.toLowerCase()),
       image: req.file.path, 
-    });
+  });
 
     await newCategory.save();
 
