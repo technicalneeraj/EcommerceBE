@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/authentication.routes');
 const productRoutes =require("./routes/product.routes");
 const categoryRoutes=require("./routes/category.routes"); 
+const userRoutes=require("./routes/user.routes");
 const {addingCategories}=require("./utils/addingCategory")
 
 const app = express();
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/", authRoutes);
 app.use("/product",productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use("/user",userRoutes);
 
 // custom error handling
 app.use((err, req, res, next) => {
