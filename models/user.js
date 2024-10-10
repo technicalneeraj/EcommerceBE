@@ -37,12 +37,6 @@ const userSchema = new mongoose.Schema({
     ],
     isEmailVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
-    cart: [
-        {
-            product: { type: mongoose.Schema.Types.ObjectId, ref: 'products' },
-            quantity: { type: Number, required: true, min: 1 }
-        }
-    ],
     paymentInformation: [
         {
             type: mongoose.Schema.Types.ObjectId,

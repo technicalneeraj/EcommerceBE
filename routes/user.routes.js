@@ -5,6 +5,9 @@ const {
   sendingWishlist,
   whishlistProductSender,
   updatingUserWishlist,
+  sendCart,
+  addToCart,
+  updateCartByItem
 } = require("../controllers/user.controller");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
@@ -15,5 +18,8 @@ router
     authMiddleware,
     catchAsync(updatingUserWishlist)
   )
-  .get("/send-wishlist", authMiddleware, catchAsync(sendingWishlist));
+  .get("/send-wishlist", authMiddleware, catchAsync(sendingWishlist))
+  .get("/cart", authMiddleware, catchAsync(sendCart))
+  .post("/add-to-cart/:id",authMiddleware, catchAsync(addToCart))
+  .patch("/update-cart/:id",authMiddleware,catchAsync(updateCartByItem))
 module.exports = router;

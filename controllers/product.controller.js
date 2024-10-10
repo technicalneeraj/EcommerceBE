@@ -2,8 +2,6 @@ const Product = require("../models/product");
 const Category = require("../models/category");
 const { HTTP_STATUS } = require("../config/constants");
 
-
-
 const addProductHandler = async (req, res) => {
     try {
         const {
