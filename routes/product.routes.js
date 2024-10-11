@@ -7,6 +7,8 @@ const {
   getProductById,
   getProductsHandler,
   addProductHandler,
+  deleteProductById,
+  updateProductById,
 } = require("../controllers/product.controller");
 const {
   authMiddleware,
@@ -23,6 +25,18 @@ router
   )
   .get("/", catchAsync(getProductsHandler))
   .get("/:id", catchAsync(getProductById))
-  .get("/category/:id", catchAsync(getCategoryById));
+  .get("/category/:id", catchAsync(getCategoryById))
+  .delete(
+    "/:id",
+    authMiddleware,
+    roleAuthMiddleware("products", "delete"),
+    catchAsync(deleteProductById)
+  )
+  .patch(
+    "/:id",
+    authMiddleware,
+    roleAuthMiddleware("products", "put"),
+    catchAsync(updateProductById)
+  );
 
 module.exports = router;

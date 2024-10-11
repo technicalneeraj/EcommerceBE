@@ -7,7 +7,9 @@ const {
   updatingUserWishlist,
   sendCart,
   addToCart,
-  updateCartByItem
+  updateCartByItem,
+  deleteItemFromWishlist,
+  removeFromCartAddToWishlist
 } = require("../controllers/user.controller");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
@@ -20,6 +22,15 @@ router
   )
   .get("/send-wishlist", authMiddleware, catchAsync(sendingWishlist))
   .get("/cart", authMiddleware, catchAsync(sendCart))
-  .post("/add-to-cart/:id",authMiddleware, catchAsync(addToCart))
-  .patch("/update-cart/:id",authMiddleware,catchAsync(updateCartByItem))
+  .post("/add-to-cart/:id", authMiddleware, catchAsync(addToCart))
+  .patch("/update-cart/:id", authMiddleware, catchAsync(updateCartByItem))
+  .delete(
+    "/remove-from-wishlist/:id",
+    authMiddleware,
+    catchAsync(deleteItemFromWishlist)
+  )
+  .patch("/remove-from-cart-add-to-wishlist/:id",
+    authMiddleware,
+    catchAsync(removeFromCartAddToWishlist)
+  )
 module.exports = router;

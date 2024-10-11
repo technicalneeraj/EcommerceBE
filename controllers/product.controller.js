@@ -1,6 +1,19 @@
 const Product = require("../models/product");
 const Category = require("../models/category");
 const { HTTP_STATUS } = require("../config/constants");
+const CartItem=require("../models/CartItem");
+const Cart=require("../models/Cart");
+const cloudinary=require("../services/cloudinary");
+
+const deleteImageFromCloudinary = async (publicId) => {
+    try {
+        const result = await cloudinary.uploader.destroy(publicId);
+        console.log(result); // Should log the result of the deletion
+        return result;
+    } catch (error) {
+        console.error("Error deleting image from Cloudinary:", error);
+    }
+};
 
 const addProductHandler = async (req, res) => {
     try {
@@ -95,9 +108,61 @@ const getCategoryById = async (req, res) => {
     }
 }
 
+const deleteProductById = async (req, res) => {
+    const { id } = req.params;
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product does not exist" });
+    }
+
+    const cartItemsToDelete = await CartItem.find({ product: id });
+  
+    if (cartItemsToDelete.length > 0) {
+      //unique ids
+      const userIds = [...new Set(cartItemsToDelete.map(item => item.userId))]; 
+
+      const carts = await Cart.find({ user: { $in: userIds } });
+  
+      for (const cart of carts) {
+
+        cart.cartItems = cart.cartItems.filter(itemId => !cartItemsToDelete.some(item => item._id.equals(itemId)));
+        
+        cart.totalPrice = cart.cartItems.reduce((total, itemId) => {
+          const item = cartItemsToDelete.find(cartItem => cartItem._id.equals(itemId));
+          return total + (item ? item.price * item.quantity : 0);
+        }, 0);
+        cart.totalItem = cart.cartItems.length;
+        if (cart.totalItem === 0) {
+            await Cart.findByIdAndDelete(cart._id);
+        } else {
+            await cart.save();
+        }
+      }
+
+      await CartItem.deleteMany({ product: id });
+    }
+
+    // const imagePublicIds = product.images.map(image => image.public_id);
+    // await Promise.all(imagePublicIds.map(publicId => deleteImageFromCloudinary(publicId)));
+    await Product.findByIdAndDelete(id);
+  
+    return res.status(200).json({ message: "Product successfully deleted" });
+  };
+
+
+
+  const updateProductById=async(req,res)=>{
+    const {id}=req.params;
+    const { name, description, price, brand, category, stock, isFeatured, status, tags } = req.body;
+    console.log(name);
+  }
+  
+
 module.exports = {
     getCategoryById,
     getProductById,
     addProductHandler,
-    getProductsHandler
+    getProductsHandler,
+    deleteProductById,
+    updateProductById
 };

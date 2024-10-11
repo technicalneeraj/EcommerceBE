@@ -6,7 +6,7 @@ const User = require("../models/user");
 const whishlistProductSender = async (req, res) => {
   const productDetails = await Product.find({
     _id: { $in: req.user.wishlist },
-  });
+  }).populate("category");
   res
     .status(200)
     .json({ message: "Successfully fetched", data: productDetails });
@@ -107,13 +107,60 @@ const updateCartByItem = async (req, res) => {
   if (!cart) {
     return res.status(404).json({ message: "Cart not found" });
   }
-  cart.cartItems = cart.cartItems.filter((item) => item._id != id);
+  cart.cartItems = cart.cartItems.filter((item) => {
+    return item.toString() !== id.toString();
+  });
   console.log(cart);
-  cart.totalPrice-=(item.price*item.quantity);
-  cart.totalItem-=item.quantity;
+  cart.totalPrice -= item.price * item.quantity;
+  cart.totalItem -= item.quantity;
   await cart.save();
   await CartItem.deleteOne({ _id: id });
   res.status(200).json({ message: "Cart item removed successfully" });
+};
+
+const deleteItemFromWishlist = async (req, res) => {
+  const userId = req.user.id;
+  const { id } = req.params;
+  const user = await User.findById(userId);
+  user.wishlist = user.wishlist.filter((item) => item != id);
+  await user.save();
+  res.status(200).json({ message: "Succesfully removed from wishlist" });
+};
+
+const removeFromCartAddToWishlist = async (req, res) => {
+  const { id } = req.params;
+
+  const cartItem = await CartItem.findById(id);
+  if (!cartItem) {
+    return res.status(404).json({ message: "Cart item not found" });
+  }
+
+  const product = await Product.findById(cartItem.product);
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  if (!user.wishlist.includes(product._id)) {
+    user.wishlist.push(product._id);
+    await user.save();
+  }
+
+  const cart = await Cart.findOne({ user: req.user.id });
+  cart.totalPrice -= cartItem.quantity * cartItem.price;
+  cart.totalItem -= cartItem.quantity;
+  cart.cartItems = cart.cartItems.filter((item) => {
+    return item.toString() !== cartItem._id.toString();
+  });
+  await cart.save();
+  await CartItem.findByIdAndDelete(id);
+
+  return res
+    .status(200)
+    .json({ message: "Product added to wishlist and removed from cart" });
 };
 
 module.exports = {
@@ -123,4 +170,6 @@ module.exports = {
   whishlistProductSender,
   updatingUserWishlist,
   sendingWishlist,
+  deleteItemFromWishlist,
+  removeFromCartAddToWishlist,
 };
