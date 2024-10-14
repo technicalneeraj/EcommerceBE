@@ -22,6 +22,10 @@ const productSchema = new Schema(
       type: String,
       trim: true
     },
+    sku:{
+      type:String,
+      required:true
+    },
     price: {
       type: Number,
       required: true

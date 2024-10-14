@@ -9,7 +9,13 @@ const bannerSchema=new mongoose.Schema({
         type: String,
         enum: ['active', 'inactive'],
         required: true 
+    },
+    category: {
+        type: String,
+        enum: ['men', 'women', 'kids'],
+        required: true
     }
+    
 });
 
 const Banner=mongoose.model("Banner",bannerSchema);

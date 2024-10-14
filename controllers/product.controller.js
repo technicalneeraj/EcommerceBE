@@ -1,19 +1,19 @@
-const Product = require("../models/product");
-const Category = require("../models/category");
+const Product = require("../models/product.model");
+const Category = require("../models/category.model");
 const { HTTP_STATUS } = require("../config/constants");
-const CartItem=require("../models/CartItem");
-const Cart=require("../models/Cart");
+const CartItem=require("../models/cartItem.model");
+const Cart=require("../models/cart.model");
 const cloudinary=require("../services/cloudinary");
 
-const deleteImageFromCloudinary = async (publicId) => {
-    try {
-        const result = await cloudinary.uploader.destroy(publicId);
-        console.log(result); // Should log the result of the deletion
-        return result;
-    } catch (error) {
-        console.error("Error deleting image from Cloudinary:", error);
-    }
-};
+// const deleteImageFromCloudinary = async (publicId) => {
+//     try {
+//         const result = await cloudinary.uploader.destroy(publicId);
+//         console.log(result); // Should log the result of the deletion
+//         return result;
+//     } catch (error) {
+//         console.error("Error deleting image from Cloudinary:", error);
+//     }
+// };
 
 const addProductHandler = async (req, res) => {
     try {
@@ -28,13 +28,17 @@ const addProductHandler = async (req, res) => {
             status,
             tags,
             P1category,
-            P2category
+            P2category,
+            attributes,
+            sku
         } = req.body;
+
 
         if (!name || !price || !category) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'Missing required fields' });
         }
 
+        const parsedAttributes = attributes.map(attr => JSON.parse(attr));
         const mainImage = req.files['mainImage'][0]?.path;
         const otherImages = req.files['otherImages'] ? req.files['otherImages'].map(file => file.path) : [];
 
@@ -67,7 +71,9 @@ const addProductHandler = async (req, res) => {
             images, 
             isFeatured,
             status,
-            tags
+            tags,
+            sku,
+            attributes: parsedAttributes,
         });
 
         await newProduct.save();
@@ -81,9 +87,11 @@ const addProductHandler = async (req, res) => {
 
 
 const getProductsHandler = async (req, res) => {
-    const data = await Product.find({})
-        .sort({ createdAt: -1 }) // front se 
-        .limit(4); // front se limit
+    const {category}=req.query;
+    const categories = await Category.find({ parent: { $in: [category] } });
+    const categoryIds = categories.map(category => category._id);
+    const data = await Product.find({category:categoryIds})
+        .sort({ createdAt: -1 }) 
     res.status(HTTP_STATUS.OK).json({ message: data });
 };
 

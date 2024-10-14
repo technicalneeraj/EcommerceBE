@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const rolesPermissions=require("../config/roleAuth");
-const User=require("../models/user");
+const User=require("../models/user.model");
 
 const authMiddleware = async(req, res, next) => {
     const token = req.cookies.accessToken;

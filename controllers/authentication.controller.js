@@ -1,5 +1,5 @@
-const User = require('../models/user');
-const UserRequest = require("../models/userRequest");
+const User = require('../models/user.model');
+const UserRequest = require("../models/userRequest.model");
 const OTP = require("otp");
 const jwt = require('jsonwebtoken');
 const { hashPassword, comparePassword } = require("../services/hashingPassword");

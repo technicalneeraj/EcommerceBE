@@ -1,7 +1,7 @@
-const Cart = require("../models/Cart");
-const CartItem = require("../models/CartItem");
-const Product = require("../models/product");
-const User = require("../models/user");
+const Cart = require("../models/cart.model");
+const CartItem = require("../models/cartItem.model");
+const Product = require("../models/product.model");
+const User = require("../models/user.model");
 
 const whishlistProductSender = async (req, res) => {
   const productDetails = await Product.find({
