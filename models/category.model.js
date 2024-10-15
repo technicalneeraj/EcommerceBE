@@ -13,6 +13,10 @@ const categorySchema = new mongoose.Schema({
     image: { 
         type: String,
         required: true
+    },
+    bannerId:{
+        type:mongoose.Schema.Types.ObjectId,
+        required:true
     }
 });
 

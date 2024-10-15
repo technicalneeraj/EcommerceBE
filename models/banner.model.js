@@ -12,7 +12,6 @@ const bannerSchema=new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['men', 'women', 'kids'],
         required: true
     }
     

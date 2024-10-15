@@ -96,13 +96,13 @@ const loginHandler = async (req, res) => {
     res.cookie('accessToken', accessToken, {
         httpOnly: false,
         secure: true,
-        maxAge: 960000,
+        maxAge: 7200000,
         // sameSite: 'Lax' 
     });
     res.cookie('refreshToken', refreshToken, {
         httpOnly: false,
         secure: true,
-        maxAge: 960000000,
+        maxAge: 7200000,
         // sameSite: 'Lax' 
     });
 

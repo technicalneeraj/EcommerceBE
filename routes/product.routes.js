@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { catchAsync } = require("../utils/catchAsync");
 const { upload } = require("../services/cloudinary");
+
 const {
   getCategoryById,
   getProductById,
@@ -9,13 +10,18 @@ const {
   addProductHandler,
   deleteProductById,
   updateProductById,
+  getProductOfCategory,
+  isInWishlist
 } = require("../controllers/product.controller");
+
 const {
   authMiddleware,
   roleAuthMiddleware,
 } = require("../middlewares/authMiddleware");
 
 router
+  .get("/check-is-in-wishlist",catchAsync(isInWishlist))
+  .get("/pageCategory", catchAsync(getProductOfCategory))
   .post(
     "/",
     authMiddleware,
