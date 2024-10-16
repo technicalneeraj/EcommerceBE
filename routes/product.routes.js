@@ -11,7 +11,8 @@ const {
   deleteProductById,
   updateProductById,
   getProductOfCategory,
-  isInWishlist
+  isInWishlist,
+  searchHandler
 } = require("../controllers/product.controller");
 
 const {
@@ -20,6 +21,7 @@ const {
 } = require("../middlewares/authMiddleware");
 
 router
+  .get("/search",catchAsync(searchHandler))
   .get("/check-is-in-wishlist",catchAsync(isInWishlist))
   .get("/pageCategory", catchAsync(getProductOfCategory))
   .post(
@@ -42,6 +44,7 @@ router
     "/:id",
     authMiddleware,
     roleAuthMiddleware("products", "put"),
+    upload.fields([{ name: "mainImage" }, { name: "otherImages" }]),
     catchAsync(updateProductById)
   );
 

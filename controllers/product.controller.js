@@ -3,8 +3,7 @@ const Category = require("../models/category.model");
 const { HTTP_STATUS } = require("../config/constants");
 const CartItem = require("../models/cartItem.model");
 const Cart = require("../models/cart.model");
-const User=require("../models/user.model");
-
+const User = require("../models/user.model");
 
 const addProductHandler = async (req, res) => {
   try {
@@ -195,37 +194,106 @@ const updateProductById = async (req, res) => {
     price,
     brand,
     category,
+    P1category,
+    P2category,
     stock,
     isFeatured,
     status,
     tags,
+    attributes,
   } = req.body;
-  console.log(name);
+  const cat = await Category.findOne({
+    type: category,
+    parent: { $all: [P1category, P2category] },
+  });
+
+  const product = await Product.findById(id);
+  product.category = cat._id;
+  product.name = name;
+  product.brand = brand;
+  product.price = price;
+  product.status = status;
+  product.tags = tags;
+  product.stock = stock;
+  product.description = description;
+  product.isFeatured = isFeatured;
+
+  let parsedAttributes = [];
+
+  if (typeof attributes === "string") {
+    try {
+      const singleAttribute = JSON.parse(attributes);
+      parsedAttributes.push(singleAttribute);
+    } catch (error) {
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json({ error: "Invalid attributes format" });
+    }
+  } else if (Array.isArray(attributes)) {
+    parsedAttributes = attributes
+      .map((attr) => {
+        try {
+          return JSON.parse(attr);
+        } catch (error) {
+          console.error("Error parsing attribute:", error);
+          return null;
+        }
+      })
+      .filter((attr) => attr !== null);
+  }
+
+  product.attributes = parsedAttributes;
+
+  await product.save();
+  res.status(200).json({ message: "Product successfully updated" });
 };
 
 const getProductOfCategory = async (req, res) => {
-    const {Pcategory,type}=req.query;
-    const categories = await Category.find({
-        type: type,
-        parent: Pcategory // Checking if Pcategory is in the parent array
-    });
-    const categoryIds = categories.map(category => category._id);
-    const products = await Product.find({ category: { $in: categoryIds } });
-    res.status(200).json({message:"successfully fetched products",products});
-}
-const isInWishlist=async(req,res)=>{
-  const {user,product}=req.query;
-  const productId=product.toString();
-  const theUser=await User.findOne({_id:user,wishlist:{$in:productId}});
-  if(theUser){
-    return res.status(200).json({data:"yes"})
+  const { Pcategory, type } = req.query;
+  const categories = await Category.find({
+    type: type,
+    parent: Pcategory, // Checking if Pcategory is in the parent array
+  });
+  const categoryIds = categories.map((category) => category._id);
+  const products = await Product.find({ category: { $in: categoryIds } });
+  res.status(200).json({ message: "successfully fetched products", products });
+};
+const isInWishlist = async (req, res) => {
+  const { user, product } = req.query;
+  const productId = product.toString();
+  const theUser = await User.findOne({
+    _id: user,
+    wishlist: { $in: productId },
+  });
+  if (theUser) {
+    return res.status(200).json({ data: "yes" });
+  } else {
+    return res.status(200).json({ data: "no" });
   }
-  else{
-    return res.status(200).json({data:"no"})
-  }
-  
-}
+};
 
+const searchHandler = async (req, res) => {
+  const { search } = req.query;
+  const categories = await Category.find({
+    $or:[
+      {type: search},
+      { type: { $regex: search, $options: 'i' } },
+      {parent:{$in:search}}
+    ]
+  });
+
+
+  const categoryIds = categories.map((category) => category._id);
+
+  const products = await Product.find({
+    $or: [
+      { name: { $regex: search, $options: "i" } },
+      { category: { $in: categoryIds } },
+    ],
+  }).populate('category');
+
+  res.status(200).json(products);
+};
 
 module.exports = {
   getCategoryById,
@@ -235,5 +303,6 @@ module.exports = {
   deleteProductById,
   updateProductById,
   getProductOfCategory,
-  isInWishlist
+  isInWishlist,
+  searchHandler,
 };
