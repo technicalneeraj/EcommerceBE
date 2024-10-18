@@ -26,7 +26,6 @@ const cartItemSchema=new mongoose.Schema({
         ref:"User",
         required:true
     }
-
 });
 
 const CartItem=mongoose.model("cartitems",cartItemSchema);

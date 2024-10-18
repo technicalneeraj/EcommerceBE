@@ -7,7 +7,9 @@ const authRoutes = require('./routes/authentication.routes');
 const productRoutes =require("./routes/product.routes");
 const categoryRoutes=require("./routes/category.routes"); 
 const userRoutes=require("./routes/user.routes");
-const {addingCategories}=require("./utils/addingCategory")
+const {addingCategories}=require("./utils/addingCategory");
+
+const addressRoutes=require("./routes/address.routes");
 
 const app = express();
 const port = process.env.PORT || 8080; 
@@ -27,6 +29,7 @@ app.use("/", authRoutes);
 app.use("/product",productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use("/user",userRoutes);
+app.use("/address",addressRoutes);
 
 // custom error handling
 app.use((err, req, res, next) => {

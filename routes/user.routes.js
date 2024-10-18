@@ -9,7 +9,8 @@ const {
   addToCart,
   updateCartByItem,
   deleteItemFromWishlist,
-  removeFromCartAddToWishlist
+  removeFromCartAddToWishlist,
+  addAddress
 } = require("../controllers/user.controller");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
@@ -33,4 +34,5 @@ router
     authMiddleware,
     catchAsync(removeFromCartAddToWishlist)
   )
+  .post("/address",authMiddleware,catchAsync(addAddress));
 module.exports = router;

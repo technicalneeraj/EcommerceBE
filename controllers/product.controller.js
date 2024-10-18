@@ -21,13 +21,8 @@ const addProductHandler = async (req, res) => {
       P2category,
       attributes,
       sku,
+      discountPrice
     } = req.body;
-
-    if (!name || !price || !category) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json({ error: "Missing required fields" });
-    }
 
     let parsedAttributes = [];
 
@@ -89,6 +84,7 @@ const addProductHandler = async (req, res) => {
       tags,
       sku,
       attributes: parsedAttributes,
+      discountPrice
     });
     await newProduct.save();
 

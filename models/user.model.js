@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
     address: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "addresses"
+            ref: "Address"
         }
     ],
     isEmailVerified: { type: Boolean, default: false },
