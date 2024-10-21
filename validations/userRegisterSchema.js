@@ -1,13 +1,13 @@
 const Joi = require("joi");
 
 const userRegisterSchema = Joi.object({
-  firstname: Joi.string().alphanum().min(3).max(15).required().messages({
+  firstname: Joi.string().min(3).max(15).required().messages({
     "string.alphanum": "First name must only contain letters and numbers.",
     "string.min": "First name must be at least 3 characters long.",
     "string.max": "First name must be at most 15 characters long.",
     "any.required": "First name is required.",
   }),
-  lastname: Joi.string().alphanum().min(3).max(15).required().messages({
+  lastname: Joi.string().min(3).max(15).required().messages({
     "string.alphanum": "Last name must only contain letters and numbers.",
     "string.min": "Last name must be at least 3 characters long.",
     "string.max": "Last name must be at most 15 characters long.",

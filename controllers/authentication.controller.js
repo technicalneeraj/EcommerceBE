@@ -18,12 +18,12 @@ const { userLoginSchema } = require("../validations/userLoginSchema");
 const signupHandler = async (req, res) => {
   const { firstname, lastname, email, password, phone } = req.body;
 
-  const { error} = userRegisterSchema.validate({
-    firstname,
-    lastname,
-    email,
-    password,
-    phone,
+  const { error } = userRegisterSchema.validate({
+    firstname: firstname.trim(),
+    lastname: lastname.trim(),
+    email: email.trim(),
+    password: password.trim(),
+    phone: phone.trim(),
   });
   if (error) {
     return res
@@ -123,6 +123,7 @@ const registerOtpValidateHandler = async (req, res) => {
 
 const loginHandler = async (req, res) => {
   const { email, password } = req.body;
+  console.log(email);
   const { error } = userLoginSchema.validate({ email, password });
   if (error) {
     return res

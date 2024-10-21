@@ -4,6 +4,7 @@ const { HTTP_STATUS } = require("../config/constants");
 const CartItem = require("../models/cartItem.model");
 const Cart = require("../models/cart.model");
 const User = require("../models/user.model");
+const productSchema = require("../validations/productSchema");
 
 const addProductHandler = async (req, res) => {
   try {
@@ -21,7 +22,7 @@ const addProductHandler = async (req, res) => {
       P2category,
       attributes,
       sku,
-      discountPrice
+      discountPrice,
     } = req.body;
 
     let parsedAttributes = [];
@@ -48,6 +49,8 @@ const addProductHandler = async (req, res) => {
         .filter((attr) => attr !== null);
     }
 
+    
+
     const mainImage = req.files["mainImage"][0]?.path;
     const otherImages = req.files["otherImages"]
       ? req.files["otherImages"].map((file) => file.path)
@@ -57,6 +60,8 @@ const addProductHandler = async (req, res) => {
       { url: mainImage, alt: "Main Image" },
       ...otherImages.map((url) => ({ url, alt: "Other Image" })),
     ];
+
+
     let cat = await Category.findOne({
       type: category,
       parent: { $all: [P1category, P2category] },
@@ -83,8 +88,8 @@ const addProductHandler = async (req, res) => {
       status,
       tags,
       sku,
-      attributes: parsedAttributes,
-      discountPrice
+      attributes: parsedAttributes[0].name==="" ||parsedAttributes[0].value==="" ? []:parsedAttributes,
+      discountPrice,
     });
     await newProduct.save();
 
@@ -198,7 +203,7 @@ const updateProductById = async (req, res) => {
     tags,
     attributes,
     sku,
-    discountPrice
+    discountPrice,
   } = req.body;
   const cat = await Category.findOne({
     type: category,
@@ -215,8 +220,8 @@ const updateProductById = async (req, res) => {
   product.stock = stock;
   product.description = description;
   product.isFeatured = isFeatured;
-  product.sku=sku;
-  product.discountPrice=discountPrice;
+  product.sku = sku;
+  product.discountPrice = discountPrice;
 
   let parsedAttributes = [];
 
@@ -275,13 +280,12 @@ const isInWishlist = async (req, res) => {
 const searchHandler = async (req, res) => {
   const { search } = req.query;
   const categories = await Category.find({
-    $or:[
-      {type: search},
-      { type: { $regex: search, $options: 'i' } },
-      {parent:{$in:search}}
-    ]
+    $or: [
+      { type: search },
+      { type: { $regex: search, $options: "i" } },
+      { parent: { $in: search } },
+    ],
   });
-
 
   const categoryIds = categories.map((category) => category._id);
 
@@ -290,7 +294,7 @@ const searchHandler = async (req, res) => {
       { name: { $regex: search, $options: "i" } },
       { category: { $in: categoryIds } },
     ],
-  }).populate('category');
+  }).populate("category");
 
   res.status(200).json(products);
 };

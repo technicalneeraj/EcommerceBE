@@ -6,6 +6,8 @@ const Address = require("../models/address.model");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const OrderItem = require("../models/orderItem.model");
 const Order = require("../models/order.model");
+const addressSchema = require("../validations/addressSchema");
+const { HTTP_STATUS } = require("../config/constants");
 
 const whishlistProductSender = async (req, res) => {
   const productDetails = await Product.find({
@@ -186,6 +188,25 @@ const addAddress = async (req, res) => {
     phone,
     isDefault,
   } = req.body;
+
+  const { error} = addressSchema.validate({
+    firstName,
+    lastName,
+    buildingName:houseNumber,
+    street,
+    landmark,
+    postalCode,
+    city,
+    country,
+    state,
+    phone,
+    isDefault,
+  });
+  if (error) {
+    return res
+      .status(HTTP_STATUS.BAD_REQUEST)
+      .json({ message: error.details[0].message });
+  }
   const newAddress = new Address({
     firstName,
     lastName,
@@ -267,7 +288,6 @@ const createCheckoutSession = async (req, res) => {
       userId: cart.user.toString(), 
     },
   });
-
   res.status(200).json({ id: session.id });
 };
 
@@ -310,6 +330,47 @@ const handleCheckoutSessionCompleted = async (req, res) => {
   res.status(200).send("Order created, cart cleared, and cart items deleted.");
 };
 
+const sendAllOrders=async(req,res)=>{
+  const ID=req.user._id;
+  const orders=await Order.find({user:ID});
+  res.status(200).json({orders});
+}
+
+const updateAddress=async(req,res)=>{
+  const {
+    firstName,
+    lastName,
+    houseNumber,
+    street,
+    landmark,
+    postalCode,
+    city,
+    country,
+    state,
+    phone,
+    isDefault,
+  } = req.body;
+  const {id}=req.params;
+  console.log(id);
+  const address=await Address.findById(id);
+  address.firstName=firstName;
+  address.lastName=lastName;
+  address.buildingName=houseNumber;
+  address.street=street;
+  address.city=city;
+  address.postalCode=postalCode;
+  address.country=country;
+  address.state=state;
+  address.phone=phone;
+  address.city=city;
+  address.isDefault=isDefault;
+  address.landmark=landmark;
+
+  await address.save();
+  res.status(200).json({message:"Address updated successfully"});
+
+}
+
 module.exports = {
   updateCartItemQuantity,
   updateCartByItem,
@@ -323,4 +384,7 @@ module.exports = {
   addAddress,
   updateCartItemSize,
   createCheckoutSession,
+  sendAllOrders,
+  handleCheckoutSessionCompleted,
+  updateAddress
 };
