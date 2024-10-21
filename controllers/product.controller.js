@@ -197,6 +197,8 @@ const updateProductById = async (req, res) => {
     status,
     tags,
     attributes,
+    sku,
+    discountPrice
   } = req.body;
   const cat = await Category.findOne({
     type: category,
@@ -213,6 +215,8 @@ const updateProductById = async (req, res) => {
   product.stock = stock;
   product.description = description;
   product.isFeatured = isFeatured;
+  product.sku=sku;
+  product.discountPrice=discountPrice;
 
   let parsedAttributes = [];
 

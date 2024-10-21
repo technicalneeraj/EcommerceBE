@@ -2,7 +2,7 @@ const mongoose=require("mongoose");
 
 const orderItemSchema=new mongoose.Schema({
     product:{
-        type:mongoose.type.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref:"products",
         required:true
     },
@@ -17,17 +17,13 @@ const orderItemSchema=new mongoose.Schema({
         type:Number,
         required:true
     },
-    discountedPrice:{
-        type:Number,
-        required:true,
-    },
     userId:{
-        type:mongoose.type.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref:"User",
         required:true
     }
 });
 
-const OrderItem=mongoose.model("orderItems",orderItemSchema);
+const OrderItem=mongoose.model("orderItem",orderItemSchema);
 
 module.exports=OrderItem;

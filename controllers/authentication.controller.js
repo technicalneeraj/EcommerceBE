@@ -281,7 +281,7 @@ const getUserData = async (req, res) => {
 };
 
 const deleteForEditHandler = async (req, res) => {
-  const { email } = req.body;
+  const { email } = req.body.data;
 
   try {
     const result = await UserRequest.deleteOne({ email });

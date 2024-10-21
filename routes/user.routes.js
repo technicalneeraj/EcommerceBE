@@ -10,7 +10,10 @@ const {
   updateCartByItem,
   deleteItemFromWishlist,
   removeFromCartAddToWishlist,
-  addAddress
+  addAddress,
+  updateCartItemSize,
+  updateCartItemQuantity,
+  createCheckoutSession
 } = require("../controllers/user.controller");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
@@ -34,5 +37,8 @@ router
     authMiddleware,
     catchAsync(removeFromCartAddToWishlist)
   )
-  .post("/address",authMiddleware,catchAsync(addAddress));
+  .post("/address",authMiddleware,catchAsync(addAddress))
+  .patch("/update-cartItem-size/:id",authMiddleware,catchAsync(updateCartItemSize))
+  .patch("/update-cartItem-quantity/:id",authMiddleware,catchAsync(updateCartItemQuantity))
+  .post("/create-checkout-session",authMiddleware,catchAsync(createCheckoutSession))
 module.exports = router;

@@ -2,7 +2,10 @@ const Cart = require("../models/cart.model");
 const CartItem = require("../models/cartItem.model");
 const Product = require("../models/product.model");
 const User = require("../models/user.model");
-const Address=require("../models/address.model");
+const Address = require("../models/address.model");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const OrderItem = require("../models/orderItem.model");
+const Order = require("../models/order.model");
 
 const whishlistProductSender = async (req, res) => {
   const productDetails = await Product.find({
@@ -85,16 +88,16 @@ const addToCart = async (req, res) => {
       cartItems: [itemCart._id],
       totalPrice: itemCart.price * itemCart.quantity,
       totalItem: itemCart.quantity,
-      totalDiscountPrice:product.discountPrice,
+      totalDiscountPrice: product.discountPrice * data.quantity,
     });
   } else {
     cart.cartItems.push(itemCart._id);
     cart.totalPrice += itemCart.price * itemCart.quantity;
     cart.totalItem += itemCart.quantity;
-    cart.totalDiscountPrice+=product.discountPrice;
+    cart.totalDiscountPrice += product.discountPrice * data.quantity;
   }
-
   await cart.save();
+  console.log(cart.totalDiscountPrice);
 
   res.status(201).json({ message: "Item added to cart", cart });
 };
@@ -102,7 +105,9 @@ const addToCart = async (req, res) => {
 const updateCartByItem = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
-  const item = await CartItem.findOne({ _id: id, userId: userId }).populate("product");
+  const item = await CartItem.findOne({ _id: id, userId: userId }).populate(
+    "product"
+  );
   if (!item) {
     return res.status(404).json({ message: "Cart item not found" });
   }
@@ -113,8 +118,8 @@ const updateCartByItem = async (req, res) => {
   cart.cartItems = cart.cartItems.filter((item) => {
     return item.toString() !== id.toString();
   });
-  cart.totalDiscountPrice-=(item.product.discountPrice *item.quantity);
-  cart.totalPrice -=( item.price * item.quantity);
+  cart.totalDiscountPrice -= item.product.discountPrice * item.quantity;
+  cart.totalPrice -= item.price * item.quantity;
   cart.totalItem -= item.quantity;
   await cart.save();
   await CartItem.deleteOne({ _id: id });
@@ -155,7 +160,7 @@ const removeFromCartAddToWishlist = async (req, res) => {
   const cart = await Cart.findOne({ user: req.user.id });
   cart.totalPrice -= cartItem.quantity * cartItem.price;
   cart.totalItem -= cartItem.quantity;
-  cart.totalDiscountPrice-= (cartItem.quantity* product.discountPrice);
+  cart.totalDiscountPrice -= cartItem.quantity * product.discountPrice;
   cart.cartItems = cart.cartItems.filter((item) => {
     return item.toString() !== cartItem._id.toString();
   });
@@ -195,15 +200,118 @@ const addAddress = async (req, res) => {
     isDefault,
     user: req.user._id,
   });
-  const user=await User.findById(req.user._id);
+  const user = await User.findById(req.user._id);
   user.address.push(newAddress._id);
   await newAddress.save();
   await user.save();
 
-  res.status(200).json({message:"Address Successfully Added"});
+  res.status(200).json({ message: "Address Successfully Added" });
+};
+
+const updateCartItemSize = async (req, res) => {
+  const { id } = req.params;
+  const { currSize } = req.body;
+  const item = await CartItem.findById(id);
+  item.size = currSize;
+  await item.save();
+  res.status(200).json({ message: "item update successfully" });
+};
+
+const updateCartItemQuantity = async (req, res) => {
+  const { id } = req.params;
+  const { currQuantity, initialQuantity } = req.body;
+  const item = await CartItem.findById(id).populate("product");
+
+  const cart = await Cart.findOne({ user: req.user._id });
+
+  cart.totalPrice -= item.price * initialQuantity;
+  cart.totalPrice += item.price * currQuantity;
+  cart.totalDiscountPrice -= item.product.discountPrice * initialQuantity;
+  cart.totalDiscountPrice += item.product.discountPrice * currQuantity;
+  cart.totalItem -= Number(initialQuantity);
+  cart.totalItem += Number(currQuantity);
+  item.quantity = currQuantity;
+  await item.save();
+  await cart.save();
+  res.status(200).json({ message: "Quantity updated" });
+};
+
+const createCheckoutSession = async (req, res) => {
+  const { cart } = req.body;
+  const myCart = await Cart.findById(cart._id).populate({
+    path: "cartItems",
+    populate: {
+      path: "product",
+    },
+  });
+
+  const lineItems = myCart.cartItems.map((item) => ({
+    price_data: {
+      currency: "inr",
+      product_data: {
+        name: item.product.name,
+      },
+      unit_amount: item.product.price * 100,
+    },
+    quantity: item.quantity,
+  }));
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: lineItems,
+    mode: "payment",
+    success_url: "http://localhost:5173/",
+    cancel_url: "http://localhost:5173/cart",
+    metadata: {
+      cartId: cart._id,
+      userId: cart.user.toString(), 
+    },
+  });
+
+  res.status(200).json({ id: session.id });
+};
+
+const handleCheckoutSessionCompleted = async (req, res) => {
+  const session = req.body.data.object;
+
+  const cartId = session.metadata.cartId;
+  const cart = await Cart.findById(cartId).populate({
+    path: "cartItems",
+    populate: {
+      path: "product",
+    },
+  });
+
+  const orderItems = await Promise.all(
+    cart.cartItems.map(async (item) => {
+      const orderItem = new OrderItem({
+        product: item.product,
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price,
+        userId: item.userId,
+      });
+      return await orderItem.save();
+    })
+  );
+
+  const newOrder = new Order({
+    user: cart.user,
+    orderItems: orderItems.map((orderItem) => orderItem._id),
+    totalPrice: cart.totalPrice,
+    totaldiscountedprice: cart.totalDiscountPrice,
+    totalItem: cart.cartItems.length,
+  });
+
+  await newOrder.save();
+  await CartItem.deleteMany({ _id: { $in: cart.cartItems } });
+  await Cart.findByIdAndDelete(cartId);
+
+  res.status(200).send("Order created, cart cleared, and cart items deleted.");
 };
 
 module.exports = {
+  updateCartItemQuantity,
   updateCartByItem,
   addToCart,
   sendCart,
@@ -213,4 +321,6 @@ module.exports = {
   deleteItemFromWishlist,
   removeFromCartAddToWishlist,
   addAddress,
+  updateCartItemSize,
+  createCheckoutSession,
 };
