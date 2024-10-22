@@ -23,10 +23,11 @@ const userRegisterSchema = Joi.object({
   }),
   phone: Joi.string()
     .pattern(/^[0-9]{10}$/)
-    .required().messages({
-        'string.pattern.base': 'Phone number must be exactly 10 digits long.',
-        'any.required': 'Phone number is required.',
-      }),
+    .required()
+    .messages({
+      "string.pattern.base": "Phone number must be exactly 10 digits long.",
+      "any.required": "Phone number is required.",
+    }),
 });
 
 module.exports = { userRegisterSchema };

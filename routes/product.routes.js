@@ -12,7 +12,7 @@ const {
   updateProductById,
   getProductOfCategory,
   isInWishlist,
-  searchHandler
+  searchHandler,
 } = require("../controllers/product.controller");
 
 const {
@@ -21,8 +21,8 @@ const {
 } = require("../middlewares/authMiddleware");
 
 router
-  .get("/search",catchAsync(searchHandler))
-  .get("/check-is-in-wishlist",catchAsync(isInWishlist))
+  .get("/search", catchAsync(searchHandler))
+  .get("/check-is-in-wishlist", catchAsync(isInWishlist))
   .get("/pageCategory", catchAsync(getProductOfCategory))
   .post(
     "/",

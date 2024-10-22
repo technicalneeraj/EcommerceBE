@@ -1,59 +1,53 @@
 const Banner = require("../models/banner.model");
 const Category = require("../models/category.model");
+const { HTTP_STATUS } = require("../config/constants");
 
 exports.getCategories = async (req, res) => {
-  try {
-    const { category, p1category, p2category } = req.query;
-    if (category) {
-      const categories = await Category.find({ parent: { $in: category } });
-      return res.status(200).json(categories);
-    } else {
-      const categories = await Category.find({
-        $and: [{ parent: p1category }, { parent: p2category }],
-      });
-      return res.status(200).json(categories);
-    }
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching categories" });
+  const { category, p1category, p2category } = req.query;
+  if (category) {
+    const categories = await Category.find({ parent: { $in: category } });
+    return res.status(HTTP_STATUS.OK).json(categories);
+  } else {
+    const categories = await Category.find({
+      $and: [{ parent: p1category }, { parent: p2category }],
+    });
+    return res.status(HTTP_STATUS.OK).json(categories);
   }
 };
 
 exports.addCategory = async (req, res) => {
   if (!req.files["image"] || !req.files["bannerImage"]) {
-    return res.status(404).json({ message: "Image is required" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "Image is required" });
   }
-  try {
-    const bannerImage = req.files["bannerImage"][0]?.path;
-    const categoryName = req.body.categoryName.toLowerCase();
-    let parentCategories = JSON.parse(req.body.parentCategories);
-    const lowerCaseParentCategories = parentCategories.map((category) =>
+  const bannerImage = req.files["bannerImage"][0]?.path;
+  const categoryName = req.body.categoryName.toLowerCase();
+  let parentCategories = JSON.parse(req.body.parentCategories);
+  const lowerCaseParentCategories = parentCategories.map((category) =>
+    category.toLowerCase()
+  );
+  const combinedString = `${categoryName},${lowerCaseParentCategories.join(",")}`;
+  const newBanner = new Banner({
+    image: bannerImage,
+    status: req.body.status,
+    category: combinedString,
+  });
+  const response = await newBanner.save();
+  const newCategory = new Category({
+    type: categoryName,
+    parent: JSON.parse(req.body.parentCategories).map((category) =>
       category.toLowerCase()
-    );
-    const combinedString = `${categoryName},${lowerCaseParentCategories.join(",")}`;
-    const newBanner = new Banner({
-      image: bannerImage,
-      status: req.body.status,
-      category: combinedString,
-    });
-    const response = await newBanner.save();
-    const newCategory = new Category({
-      type: categoryName,
-      parent: JSON.parse(req.body.parentCategories).map((category) =>
-        category.toLowerCase()
-      ),
-      image: req.files["image"][0]?.path,
-      bannerId: response._id,
-    });
+    ),
+    image: req.files["image"][0]?.path,
+    bannerId: response._id,
+  });
 
-    await newCategory.save();
+  await newCategory.save();
 
-    res
-      .status(201)
-      .json({ message: "Category added successfully!", category: newCategory });
-  } catch (error) {
-    console.error("Error adding category:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
+  res
+    .status(HTTP_STATUS.CREATED)
+    .json({ message: "Category added successfully!", category: newCategory });
 };
 
 exports.uploadBanner = async (req, res) => {
@@ -65,19 +59,19 @@ exports.uploadBanner = async (req, res) => {
     category,
   });
   await banner.save();
-  res.status(200).json({ message: "Banner successfully uploaded" });
+  res.status(HTTP_STATUS.OK).json({ message: "Banner successfully uploaded" });
 };
 
 exports.getBanner = async (req, res) => {
-  const { category,Pcategory,type } = req.query;
-  if(!Pcategory || !type){
-  const data = await Banner.find({ category });
-  return res.status(200).json(data);
+  const { category, Pcategory, type } = req.query;
+  if (!Pcategory || !type) {
+    const data = await Banner.find({ category });
+    return res.status(HTTP_STATUS.OK).json(data);
+  } else {
+    const cat = `${type},${Pcategory}`;
+    const response = await Banner.findOne({
+      category: { $regex: cat, $options: "i" },
+    });
+    res.status(HTTP_STATUS.OK).json(response);
   }
-  else{
-    const cat=`${type},${Pcategory}`
-    const response = await Banner.findOne({ category: { $regex: cat, $options: 'i' } });
-    res.status(200).json(response);
-  }
-  
 };

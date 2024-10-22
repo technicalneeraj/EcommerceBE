@@ -1,9 +1,9 @@
 const Product = require("../models/product.model");
 const Category = require("../models/category.model");
-const { HTTP_STATUS } = require("../config/constants");
 const CartItem = require("../models/cartItem.model");
 const Cart = require("../models/cart.model");
 const User = require("../models/user.model");
+const { HTTP_STATUS } = require("../config/constants");
 const productSchema = require("../validations/productSchema");
 
 const addProductHandler = async (req, res) => {
@@ -49,8 +49,6 @@ const addProductHandler = async (req, res) => {
         .filter((attr) => attr !== null);
     }
 
-    
-
     const mainImage = req.files["mainImage"][0]?.path;
     const otherImages = req.files["otherImages"]
       ? req.files["otherImages"].map((file) => file.path)
@@ -60,7 +58,6 @@ const addProductHandler = async (req, res) => {
       { url: mainImage, alt: "Main Image" },
       ...otherImages.map((url) => ({ url, alt: "Other Image" })),
     ];
-
 
     let cat = await Category.findOne({
       type: category,
@@ -88,7 +85,10 @@ const addProductHandler = async (req, res) => {
       status,
       tags,
       sku,
-      attributes: parsedAttributes[0].name==="" ||parsedAttributes[0].value==="" ? []:parsedAttributes,
+      attributes:
+        parsedAttributes[0].name === "" || parsedAttributes[0].value === ""
+          ? []
+          : parsedAttributes,
       discountPrice,
     });
     await newProduct.save();
@@ -184,7 +184,9 @@ const deleteProductById = async (req, res) => {
   // await Promise.all(imagePublicIds.map(publicId => deleteImageFromCloudinary(publicId)));
   await Product.findByIdAndDelete(id);
 
-  return res.status(200).json({ message: "Product successfully deleted" });
+  return res
+    .status(HTTP_STATUS.OK)
+    .json({ message: "Product successfully deleted" });
 };
 
 const updateProductById = async (req, res) => {
@@ -250,7 +252,7 @@ const updateProductById = async (req, res) => {
   product.attributes = parsedAttributes;
 
   await product.save();
-  res.status(200).json({ message: "Product successfully updated" });
+  res.status(HTTP_STATUS.OK).json({ message: "Product successfully updated" });
 };
 
 const getProductOfCategory = async (req, res) => {
@@ -261,7 +263,9 @@ const getProductOfCategory = async (req, res) => {
   });
   const categoryIds = categories.map((category) => category._id);
   const products = await Product.find({ category: { $in: categoryIds } });
-  res.status(200).json({ message: "successfully fetched products", products });
+  res
+    .status(HTTP_STATUS.OK)
+    .json({ message: "successfully fetched products", products });
 };
 const isInWishlist = async (req, res) => {
   const { user, product } = req.query;
@@ -271,9 +275,9 @@ const isInWishlist = async (req, res) => {
     wishlist: { $in: productId },
   });
   if (theUser) {
-    return res.status(200).json({ data: "yes" });
+    return res.status(HTTP_STATUS.OK).json({ data: "yes" });
   } else {
-    return res.status(200).json({ data: "no" });
+    return res.status(HTTP_STATUS.OK).json({ data: "no" });
   }
 };
 
@@ -296,7 +300,7 @@ const searchHandler = async (req, res) => {
     ],
   }).populate("category");
 
-  res.status(200).json(products);
+  res.status(HTTP_STATUS.OK).json(products);
 };
 
 module.exports = {

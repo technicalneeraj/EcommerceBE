@@ -1,9 +1,9 @@
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Cart = require("../models/cart.model");
 const CartItem = require("../models/cartItem.model");
 const Product = require("../models/product.model");
 const User = require("../models/user.model");
 const Address = require("../models/address.model");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const OrderItem = require("../models/orderItem.model");
 const Order = require("../models/order.model");
 const addressSchema = require("../validations/addressSchema");
@@ -14,7 +14,7 @@ const whishlistProductSender = async (req, res) => {
     _id: { $in: req.user.wishlist },
   }).populate("category");
   res
-    .status(200)
+    .status(HTTP_STATUS.OK)
     .json({ message: "Successfully fetched", data: productDetails });
 };
 const updatingUserWishlist = async (req, res) => {
@@ -29,22 +29,24 @@ const updatingUserWishlist = async (req, res) => {
   const product = await Product.findById(id);
   if (!product) {
     return res
-      .status(404)
+      .status(HTTP_STATUS.NOT_FOUND)
       .json({ message: "Product does not exist in the database" });
   }
 
   if (!user.wishlist.includes(id)) {
     user.wishlist.push(id);
     await user.save();
-    return res.status(200).json({ message: "Product added to wishlist" });
+    return res
+      .status(HTTP_STATUS.OK)
+      .json({ message: "Product added to wishlist" });
   }
   user.wishlist = user.wishlist.filter((item) => item.toString() !== id);
   await user.save();
-  res.status(200).json({ message: "Product removed from wishlist" });
+  res.status(HTTP_STATUS.OK).json({ message: "Product removed from wishlist" });
 };
 
 const sendingWishlist = async (req, res) => {
-  res.status(200).json({
+  res.status(HTTP_STATUS.OK).json({
     message: "successfully fetched wishlist details",
     wishlistData: req.user.wishlist,
   });
@@ -57,9 +59,11 @@ const sendCart = async (req, res) => {
     populate: { path: "product", populate: { path: "category" } },
   });
   if (!cart) {
-    return res.status(404).json({ message: "The cart is empty" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "The cart is empty" });
   }
-  res.status(200).json({ message: "Succesfully fetched", cart });
+  res.status(HTTP_STATUS.OK).json({ message: "Succesfully fetched", cart });
 };
 
 const addToCart = async (req, res) => {
@@ -69,7 +73,9 @@ const addToCart = async (req, res) => {
 
   const product = await Product.findById(id);
   if (!product) {
-    return res.status(404).json({ message: "Product not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "Product not found" });
   }
 
   const value = {
@@ -101,7 +107,7 @@ const addToCart = async (req, res) => {
   await cart.save();
   console.log(cart.totalDiscountPrice);
 
-  res.status(201).json({ message: "Item added to cart", cart });
+  res.status(HTTP_STATUS.CREATED).json({ message: "Item added to cart", cart });
 };
 
 const updateCartByItem = async (req, res) => {
@@ -111,11 +117,15 @@ const updateCartByItem = async (req, res) => {
     "product"
   );
   if (!item) {
-    return res.status(404).json({ message: "Cart item not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "Cart item not found" });
   }
   const cart = await Cart.findOne({ user: userId });
   if (!cart) {
-    return res.status(404).json({ message: "Cart not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "Cart not found" });
   }
   cart.cartItems = cart.cartItems.filter((item) => {
     return item.toString() !== id.toString();
@@ -125,7 +135,9 @@ const updateCartByItem = async (req, res) => {
   cart.totalItem -= item.quantity;
   await cart.save();
   await CartItem.deleteOne({ _id: id });
-  res.status(200).json({ message: "Cart item removed successfully" });
+  res
+    .status(HTTP_STATUS.OK)
+    .json({ message: "Cart item removed successfully" });
 };
 
 const deleteItemFromWishlist = async (req, res) => {
@@ -134,7 +146,9 @@ const deleteItemFromWishlist = async (req, res) => {
   const user = await User.findById(userId);
   user.wishlist = user.wishlist.filter((item) => item != id);
   await user.save();
-  res.status(200).json({ message: "Succesfully removed from wishlist" });
+  res
+    .status(HTTP_STATUS.OK)
+    .json({ message: "Succesfully removed from wishlist" });
 };
 
 const removeFromCartAddToWishlist = async (req, res) => {
@@ -142,17 +156,23 @@ const removeFromCartAddToWishlist = async (req, res) => {
 
   const cartItem = await CartItem.findById(id);
   if (!cartItem) {
-    return res.status(404).json({ message: "Cart item not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "Cart item not found" });
   }
 
   const product = await Product.findById(cartItem.product);
   if (!product) {
-    return res.status(404).json({ message: "Product not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "Product not found" });
   }
 
   const user = await User.findById(req.user.id);
   if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "User not found" });
   }
   if (!user.wishlist.includes(product._id)) {
     user.wishlist.push(product._id);
@@ -170,7 +190,7 @@ const removeFromCartAddToWishlist = async (req, res) => {
   await CartItem.findByIdAndDelete(id);
 
   return res
-    .status(200)
+    .status(HTTP_STATUS.OK)
     .json({ message: "Product added to wishlist and removed from cart" });
 };
 
@@ -189,10 +209,10 @@ const addAddress = async (req, res) => {
     isDefault,
   } = req.body;
 
-  const { error} = addressSchema.validate({
+  const { error } = addressSchema.validate({
     firstName,
     lastName,
-    buildingName:houseNumber,
+    buildingName: houseNumber,
     street,
     landmark,
     postalCode,
@@ -226,7 +246,7 @@ const addAddress = async (req, res) => {
   await newAddress.save();
   await user.save();
 
-  res.status(200).json({ message: "Address Successfully Added" });
+  res.status(HTTP_STATUS.OK).json({ message: "Address Successfully Added" });
 };
 
 const updateCartItemSize = async (req, res) => {
@@ -235,7 +255,7 @@ const updateCartItemSize = async (req, res) => {
   const item = await CartItem.findById(id);
   item.size = currSize;
   await item.save();
-  res.status(200).json({ message: "item update successfully" });
+  res.status(HTTP_STATUS.OK).json({ message: "item update successfully" });
 };
 
 const updateCartItemQuantity = async (req, res) => {
@@ -254,7 +274,7 @@ const updateCartItemQuantity = async (req, res) => {
   item.quantity = currQuantity;
   await item.save();
   await cart.save();
-  res.status(200).json({ message: "Quantity updated" });
+  res.status(HTTP_STATUS.OK).json({ message: "Quantity updated" });
 };
 
 const createCheckoutSession = async (req, res) => {
@@ -285,10 +305,10 @@ const createCheckoutSession = async (req, res) => {
     cancel_url: "http://localhost:5173/cart",
     metadata: {
       cartId: cart._id,
-      userId: cart.user.toString(), 
+      userId: cart.user.toString(),
     },
   });
-  res.status(200).json({ id: session.id });
+  res.status(HTTP_STATUS.OK).json({ id: session.id });
 };
 
 const handleCheckoutSessionCompleted = async (req, res) => {
@@ -327,16 +347,18 @@ const handleCheckoutSessionCompleted = async (req, res) => {
   await CartItem.deleteMany({ _id: { $in: cart.cartItems } });
   await Cart.findByIdAndDelete(cartId);
 
-  res.status(200).send("Order created, cart cleared, and cart items deleted.");
+  res
+    .status(HTTP_STATUS.OK)
+    .send("Order created, cart cleared, and cart items deleted.");
 };
 
-const sendAllOrders=async(req,res)=>{
-  const ID=req.user._id;
-  const orders=await Order.find({user:ID});
-  res.status(200).json({orders});
-}
+const sendAllOrders = async (req, res) => {
+  const ID = req.user._id;
+  const orders = await Order.find({ user: ID });
+  res.status(HTTP_STATUS.OK).json({ orders });
+};
 
-const updateAddress=async(req,res)=>{
+const updateAddress = async (req, res) => {
   const {
     firstName,
     lastName,
@@ -350,26 +372,25 @@ const updateAddress=async(req,res)=>{
     phone,
     isDefault,
   } = req.body;
-  const {id}=req.params;
+  const { id } = req.params;
   console.log(id);
-  const address=await Address.findById(id);
-  address.firstName=firstName;
-  address.lastName=lastName;
-  address.buildingName=houseNumber;
-  address.street=street;
-  address.city=city;
-  address.postalCode=postalCode;
-  address.country=country;
-  address.state=state;
-  address.phone=phone;
-  address.city=city;
-  address.isDefault=isDefault;
-  address.landmark=landmark;
+  const address = await Address.findById(id);
+  address.firstName = firstName;
+  address.lastName = lastName;
+  address.buildingName = houseNumber;
+  address.street = street;
+  address.city = city;
+  address.postalCode = postalCode;
+  address.country = country;
+  address.state = state;
+  address.phone = phone;
+  address.city = city;
+  address.isDefault = isDefault;
+  address.landmark = landmark;
 
   await address.save();
-  res.status(200).json({message:"Address updated successfully"});
-
-}
+  res.status(HTTP_STATUS.OK).json({ message: "Address updated successfully" });
+};
 
 module.exports = {
   updateCartItemQuantity,
@@ -386,5 +407,5 @@ module.exports = {
   createCheckoutSession,
   sendAllOrders,
   handleCheckoutSessionCompleted,
-  updateAddress
+  updateAddress,
 };

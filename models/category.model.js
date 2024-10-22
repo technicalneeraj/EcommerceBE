@@ -1,23 +1,24 @@
 const mongoose = require("mongoose");
 
 const categorySchema = new mongoose.Schema({
-    type: {
-        type: String,
-        required: true,
-        maxLength: 50
+  type: {
+    type: String,
+    required: true,
+    maxLength: 50,
+  },
+  parent: [
+    {
+      type: String,
     },
-    parent: [{
-        type:String,
-       
-    }],
-    image: { 
-        type: String,
-        required: true
-    },
-    bannerId:{
-        type:mongoose.Schema.Types.ObjectId,
-        required:true
-    }
+  ],
+  image: {
+    type: String,
+    required: true,
+  },
+  bannerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+  },
 });
 
 const Category = mongoose.model("Category", categorySchema);

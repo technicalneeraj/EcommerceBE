@@ -1,19 +1,21 @@
-const User = require("../models/user.model");
-const UserRequest = require("../models/userRequest.model");
 const OTP = require("otp");
 const jwt = require("jsonwebtoken");
+const User = require("../models/user.model");
+const UserRequest = require("../models/userRequest.model");
+const { transporter } = require("../services/mail");
+const { userRegisterSchema } = require("../validations/userRegisterSchema");
+const { userLoginSchema } = require("../validations/userLoginSchema");
+
 const {
   hashPassword,
   comparePassword,
 } = require("../services/hashingPassword");
-const { transporter } = require("../services/mail");
+
 const {
   EMAIL_SUBJECTS,
   OTP_EXPIRATION_TIME,
   HTTP_STATUS,
 } = require("../config/constants");
-const { userRegisterSchema } = require("../validations/userRegisterSchema");
-const { userLoginSchema } = require("../validations/userLoginSchema");
 
 const signupHandler = async (req, res) => {
   const { firstname, lastname, email, password, phone } = req.body;
@@ -103,21 +105,17 @@ const registerOtpValidateHandler = async (req, res) => {
 
   if (userReq.otpAttempts >= 3) {
     await UserRequest.deleteOne({ email });
-    return res
-      .status(HTTP_STATUS.LOCKED)
-      .json({
-        message: "Too many failed attempts. Your account has been deleted.",
-      });
+    return res.status(HTTP_STATUS.LOCKED).json({
+      message: "Too many failed attempts. Your account has been deleted.",
+    });
   } else {
     await userReq.save();
-    return res
-      .status(HTTP_STATUS.FORBIDDEN)
-      .json({
-        message:
-          "You have entered the wrong OTP. You have " +
-          (3 - userReq.otpAttempts) +
-          " attempts left.",
-      });
+    return res.status(HTTP_STATUS.FORBIDDEN).json({
+      message:
+        "You have entered the wrong OTP. You have " +
+        (3 - userReq.otpAttempts) +
+        " attempts left.",
+    });
   }
 };
 
@@ -244,14 +242,12 @@ const forgotOtpVerifier = async (req, res) => {
       .json({ message: "Too many failed attempts. Please try again later" });
   } else {
     await user.save();
-    return res
-      .status(HTTP_STATUS.UNAUTHORIZED)
-      .json({
-        message:
-          "You have entered the wrong OTP. You have " +
-          (3 - user.otpAttempts) +
-          " attempts left.",
-      });
+    return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      message:
+        "You have entered the wrong OTP. You have " +
+        (3 - user.otpAttempts) +
+        " attempts left.",
+    });
   }
 };
 
@@ -297,12 +293,10 @@ const deleteForEditHandler = async (req, res) => {
       .json({ message: "User successfully deleted." });
   } catch (error) {
     console.error("Error deleting user:", error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json({
-        message:
-          "An error occurred while trying to delete the user. Please try again.",
-      });
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      message:
+        "An error occurred while trying to delete the user. Please try again.",
+    });
   }
 };
 
@@ -310,35 +304,38 @@ const verifyToken = async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "No token provided" });
+    return res
+      .status(HTTP_STATUS.UNAUTHORIZED)
+      .json({ message: "No token provided" });
   }
 
   jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
     if (err) {
-      return res.status(401).json({ message: "Invalid token" });
+      return res
+        .status(HTTP_STATUS.UNAUTHORIZED)
+        .json({ message: "Invalid token" });
     }
 
-    try {
-      const user = await User.findById(decoded.userId).populate('address');
+    const user = await User.findById(decoded.userId).populate("address");
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const userData = {
-        id: user._id,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        role: user.role,
-      };
-      res.status(200).json({ message: "Token is valid", user: userData });
-    } catch (fetchError) {
-      console.error("Error fetching user:", fetchError);
-      res.status(500).json({ message: "Error fetching user data" });
+    if (!user) {
+      return res
+        .status(HTTP_STATUS.NOT_FOUND)
+        .json({ message: "User not found" });
     }
+
+    const userData = {
+      id: user._id,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+    };
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: "Token is valid", user: userData });
   });
 };
 
@@ -347,7 +344,9 @@ const updateProfile = async (req, res) => {
 
   const user = await User.findOne({ email });
   if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "User not found" });
   }
 
   user.firstname = firstname ?? user.firstname;
@@ -358,7 +357,7 @@ const updateProfile = async (req, res) => {
   await user.save();
 
   return res
-    .status(200)
+    .status(HTTP_STATUS.OK)
     .json({ message: "Profile updated successfully", user });
 };
 
@@ -366,11 +365,13 @@ const deleteAccountHandler = async (req, res) => {
   const userData = req.body;
   const user = await User.findById(userData.id);
   if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    return res
+      .status(HTTP_STATUS.NOT_FOUND)
+      .json({ message: "User not found" });
   }
   await User.deleteOne({ _id: userData.id });
 
-  res.status(200).json({ message: "Account deleted successfully" });
+  res.status(HTTP_STATUS.OK).json({ message: "Account deleted successfully" });
 };
 
 module.exports = {
