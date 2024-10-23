@@ -18,11 +18,13 @@ const {
   sendAllOrders,
   updateAddress,
   sendCountOfTotalItemInWishlistAndCart,
+  verifyOrder,
 } = require("../controllers/user.controller");
 
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
 router
+  .post("/verify-order", catchAsync(verifyOrder))
   .get("/wishlist-product", authMiddleware, catchAsync(whishlistProductSender))
   .patch(
     "/updating-user-wishlist/:id",
@@ -65,6 +67,7 @@ router
     "/total-item-in-cart-and-wishilist",
     authMiddleware,
     catchAsync(sendCountOfTotalItemInWishlistAndCart)
-  );
+  )
+  .post("/verify-order", catchAsync(verifyOrder));
 
 module.exports = router;

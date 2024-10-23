@@ -77,6 +77,16 @@ const addToCart = async (req, res) => {
       .status(HTTP_STATUS.NOT_FOUND)
       .json({ message: "Product not found" });
   }
+  if (product.stock <= 0) {
+    return res
+      .status(HTTP_STATUS.CONFLICT)
+      .json({ message: "Product is currently out of stock" });
+  }
+  if (product.stock < data.quantity) {
+    return res
+      .status(HTTP_STATUS.CONFLICT)
+      .json({ message: "Quantity selected is more than stock" });
+  }
 
   const value = {
     product: id,
@@ -262,7 +272,11 @@ const updateCartItemQuantity = async (req, res) => {
   const { id } = req.params;
   const { currQuantity, initialQuantity } = req.body;
   const item = await CartItem.findById(id).populate("product");
-
+  if (currQuantity > item.product.stock) {
+    return res
+      .status(HTTP_STATUS.CONFLICT)
+      .json({ message: "Quantity entered is more than stock available" });
+  }
   const cart = await Cart.findOne({ user: req.user._id });
 
   cart.totalPrice -= item.price * initialQuantity;
@@ -278,13 +292,41 @@ const updateCartItemQuantity = async (req, res) => {
 };
 
 const createCheckoutSession = async (req, res) => {
+  const frontendUrl = "http://localhost:5173";
+
   const { cart } = req.body;
-  const myCart = await Cart.findById(cart._id).populate({
+  const cartId = cart._id;
+  const myCart = await Cart.findById(cartId).populate({
     path: "cartItems",
     populate: {
       path: "product",
     },
   });
+
+  const orderItems = await Promise.all(
+    myCart.cartItems.map(async (item) => {
+      const orderItem = new OrderItem({
+        product: item.product,
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price,
+        userId: item.userId,
+      });
+      return await orderItem.save();
+    })
+  );
+
+  const newOrder = new Order({
+    user: myCart.user,
+    orderItems: orderItems.map((orderItem) => orderItem._id),
+    totalPrice: myCart.totalPrice,
+    totaldiscountedprice: myCart.totalDiscountPrice,
+    totalItem: myCart.cartItems.length,
+  });
+
+  await newOrder.save();
+  await CartItem.deleteMany({ _id: { $in: myCart.cartItems } });
+  await Cart.findByIdAndDelete(cartId);
 
   const lineItems = myCart.cartItems.map((item) => ({
     price_data: {
@@ -301,60 +343,41 @@ const createCheckoutSession = async (req, res) => {
     payment_method_types: ["card"],
     line_items: lineItems,
     mode: "payment",
-    success_url: "http://localhost:5173/",
-    cancel_url: "http://localhost:5173/cart",
-    metadata: {
-      cartId: cart._id,
-      userId: cart.user.toString(),
-    },
+    success_url: `${frontendUrl}/verify?success=true&orderId=${newOrder._id}`,
+    cancel_url: `${frontendUrl}/verify?success=false&orderId=${newOrder._id}`,
   });
   res.status(HTTP_STATUS.OK).json({ id: session.id });
 };
 
-const handleCheckoutSessionCompleted = async (req, res) => {
-  const session = req.body.data.object;
-
-  const cartId = session.metadata.cartId;
-  const cart = await Cart.findById(cartId).populate({
-    path: "cartItems",
-    populate: {
-      path: "product",
-    },
-  });
-
-  const orderItems = await Promise.all(
-    cart.cartItems.map(async (item) => {
-      const orderItem = new OrderItem({
-        product: item.product,
-        size: item.size,
-        quantity: item.quantity,
-        price: item.price,
-        userId: item.userId,
+const verifyOrder = async (req, res) => {
+  const { orderId, success } = req.body;
+  const isSuccess = success === "true";
+  if (isSuccess) {
+    try {
+      await Order.findByIdAndUpdate(orderId, {
+        $set: { "paymentDetails.paymentStatus": "Completed" },
       });
-      return await orderItem.save();
-    })
-  );
-
-  const newOrder = new Order({
-    user: cart.user,
-    orderItems: orderItems.map((orderItem) => orderItem._id),
-    totalPrice: cart.totalPrice,
-    totaldiscountedprice: cart.totalDiscountPrice,
-    totalItem: cart.cartItems.length,
-  });
-
-  await newOrder.save();
-  await CartItem.deleteMany({ _id: { $in: cart.cartItems } });
-  await Cart.findByIdAndDelete(cartId);
-
-  res
-    .status(HTTP_STATUS.OK)
-    .send("Order created, cart cleared, and cart items deleted.");
+      res.status(200).json({ message: "Order payment updated successfully" });
+    } catch (error) {
+      console.error("Error updating order:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  } else {
+    res.status(400).json({ message: "Payment failed" });
+  }
 };
 
 const sendAllOrders = async (req, res) => {
   const ID = req.user._id;
-  const orders = await Order.find({ user: ID });
+  const orders = await Order.find({ user: ID })
+    .populate({
+      path: "orderItems",
+      populate: {
+        path: "product",
+      },
+    })
+    .sort({ orderDate: -1 });
+
   res.status(HTTP_STATUS.OK).json({ orders });
 };
 
@@ -395,8 +418,14 @@ const updateAddress = async (req, res) => {
 const sendCountOfTotalItemInWishlistAndCart = async (req, res) => {
   const totalWishlistItems = req.user.wishlist.length;
   const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    const totalCartItems = 0;
+    return res
+      .status(HTTP_STATUS.OK)
+      .json({ totalWishlistItems, totalCartItems });
+  }
   const totalCartItems = cart.cartItems.length;
-  res.status(200).json({ totalWishlistItems, totalCartItems });
+  res.status(HTTP_STATUS.OK).json({ totalWishlistItems, totalCartItems });
 };
 
 module.exports = {
@@ -413,7 +442,7 @@ module.exports = {
   updateCartItemSize,
   createCheckoutSession,
   sendAllOrders,
-  handleCheckoutSessionCompleted,
   updateAddress,
   sendCountOfTotalItemInWishlistAndCart,
+  verifyOrder,
 };

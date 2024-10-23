@@ -9,12 +9,8 @@ const productRoutes = require("./routes/product.routes");
 const categoryRoutes = require("./routes/category.routes");
 const userRoutes = require("./routes/user.routes");
 
-const {
-  handleCheckoutSessionCompleted,
-} = require("./controllers/user.controller");
 
 const addressRoutes = require("./routes/address.routes");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -30,29 +26,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.raw({ type: "application/json" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-app.post("/api/webhook", async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  const rawBody = req.body;
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error(`Webhook Error: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  if (event.type === "checkout.session.completed") {
-    await handleCheckoutSessionCompleted(event);
-  }
-
-  res.json({ received: true });
-});
 
 app.use("/", authRoutes);
 app.use("/product", productRoutes);

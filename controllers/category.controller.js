@@ -65,7 +65,7 @@ exports.uploadBanner = async (req, res) => {
 exports.getBanner = async (req, res) => {
   const { category, Pcategory, type } = req.query;
   if (!Pcategory || !type) {
-    const data = await Banner.find({ category });
+    const data = await Banner.find({  category: { $regex:`\\b${category}\\b`, $options: "i" },});
     return res.status(HTTP_STATUS.OK).json(data);
   } else {
     const cat = `${type},${Pcategory}`;
