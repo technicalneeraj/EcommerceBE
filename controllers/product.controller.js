@@ -24,6 +24,22 @@ const addProductHandler = async (req, res) => {
       sku,
       discountPrice,
     } = req.body;
+    const { error } = productSchema.validate({
+      price,
+      discountPrice,
+      name,
+      description,
+      sku,
+      stock,
+      isFeatured,
+      status,
+      category
+    });
+    if (error) {
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json({ message: error.details[0].message });
+    }
 
     let parsedAttributes = [];
 

@@ -17,6 +17,7 @@ const {
   createCheckoutSession,
   sendAllOrders,
   updateAddress,
+  sendCountOfTotalItemInWishlistAndCart,
 } = require("../controllers/user.controller");
 
 const { authMiddleware } = require("../middlewares/authMiddleware");
@@ -59,6 +60,11 @@ router
     authMiddleware,
     catchAsync(createCheckoutSession)
   )
-  .get("/orders", authMiddleware, catchAsync(sendAllOrders));
+  .get("/orders", authMiddleware, catchAsync(sendAllOrders))
+  .get(
+    "/total-item-in-cart-and-wishilist",
+    authMiddleware,
+    catchAsync(sendCountOfTotalItemInWishlistAndCart)
+  );
 
 module.exports = router;

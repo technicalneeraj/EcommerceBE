@@ -392,6 +392,13 @@ const updateAddress = async (req, res) => {
   res.status(HTTP_STATUS.OK).json({ message: "Address updated successfully" });
 };
 
+const sendCountOfTotalItemInWishlistAndCart = async (req, res) => {
+  const totalWishlistItems = req.user.wishlist.length;
+  const cart = await Cart.findOne({ user: req.user._id });
+  const totalCartItems = cart.cartItems.length;
+  res.status(200).json({ totalWishlistItems, totalCartItems });
+};
+
 module.exports = {
   updateCartItemQuantity,
   updateCartByItem,
@@ -408,4 +415,5 @@ module.exports = {
   sendAllOrders,
   handleCheckoutSessionCompleted,
   updateAddress,
+  sendCountOfTotalItemInWishlistAndCart,
 };
