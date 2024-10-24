@@ -354,6 +354,10 @@ const verifyOrder = async (req, res) => {
   const isSuccess = success === "true";
   if (isSuccess) {
     try {
+      const order = await Order.findById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
       await Order.findByIdAndUpdate(orderId, {
         $set: { "paymentDetails.paymentStatus": "Completed" },
       });

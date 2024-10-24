@@ -106,7 +106,7 @@ const registerOtpValidateHandler = async (req, res) => {
   if (userReq.otpAttempts >= 3) {
     await UserRequest.deleteOne({ email });
     return res.status(HTTP_STATUS.LOCKED).json({
-      message: "Too many failed attempts. Your account has been deleted.",
+      message: "Too many failed attempts. Please try again later!!",
     });
   } else {
     await userReq.save();
