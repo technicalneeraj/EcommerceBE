@@ -292,7 +292,7 @@ const updateCartItemQuantity = async (req, res) => {
 };
 
 const createCheckoutSession = async (req, res) => {
-  const frontendUrl = "http://localhost:5173";
+  const frontendUrl = "https://courageous-brioche-a572cc.netlify.app/";
 
   const { cart } = req.body;
   const cartId = cart._id;
