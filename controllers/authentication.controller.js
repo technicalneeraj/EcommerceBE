@@ -149,16 +149,16 @@ const loginHandler = async (req, res) => {
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN }
   );
   res.cookie("accessToken", accessToken, {
-    httpOnly: false,
+    httpOnly: true,
     secure: true,
-    maxAge: 7200000,
-    // sameSite: 'Lax'
+    maxAge: 72000000000,
+    sameSite: 'none'
   });
   res.cookie("refreshToken", refreshToken, {
-    httpOnly: false,
+     httpOnly: true,
     secure: true,
-    maxAge: 7200000,
-    // sameSite: 'Lax'
+    maxAge: 72000000000,
+    sameSite: 'none'
   });
 
   const userData = {
