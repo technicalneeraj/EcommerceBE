@@ -17,7 +17,7 @@ const port = process.env.PORT || 8080;
 
 app.use(
   cors({
-    origin:  http://localhost:5173/, // url whitelist
+    origin: "http://localhost:5173/", // url whitelist
     credentials: true,
   })
 );
